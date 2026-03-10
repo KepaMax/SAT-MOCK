@@ -4,6 +4,10 @@ WORKDIR /src
 
 # 1. Copy only .csproj files first for better caching
 # This ensures that 'dotnet restore' only re-runs if you change dependencies
+
+COPY Directory.Build.props .
+
+
 COPY ["src/Web/Web.csproj", "src/Web/"]
 COPY ["src/Application/Application.csproj", "src/Application/"]
 COPY ["src/Infrastructure/Infrastructure.csproj", "src/Infrastructure/"]
