@@ -29,7 +29,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       # The double underscore (__) replaces the colon (:) for Linux environment variables
-      - ConnectionStrings__DefaultConnection=Host=db;Database=${DB_NAME:-exam_system};Username=${DB_USER:-postgres};Password=${DB_PASSWORD}
+      - ConnectionStrings__EXAM_SYSTEMDb=Host=db;Database=${DB_NAME:-exam_system};Username=${DB_USER:-postgres};Password=${DB_PASSWORD}
       # Required for some Clean Architecture templates (MediatR, etc.)
       - MediatR__License=Free/Open Source
     ports:
