@@ -10,16 +10,19 @@ public class Users : EndpointGroupBase
 {
     public override void Map(RouteGroupBuilder groupBuilder)
     {
-        groupBuilder.MapIdentityApi<ApplicationUser>();
+        // 1. Map the built-in API
+        var identityGroup = groupBuilder.MapGroup("identity");
+        identityGroup.MapIdentityApi<ApplicationUser>();
+        // This registers at: /users/identity/register, /users/identity/login, etc.
 
-        // Manual override so Scalar shows the Username field
+        // Your register lives at /users/register — no conflict
         groupBuilder.MapPost("register", async (ISender sender, CreateUserCommand command) =>
         {
             var result = await sender.Send(command);
-            return result.Succeeded ? Results.Ok() : Results.BadRequest();
-        })
-        .WithSummary("Registers a new student")
-        .WithDescription("Accepts Username, Email, and Password."); // Scalar will now show all 3 fields!
+            return result.Succeeded.Succeeded
+                ? Results.Ok()
+                : Results.BadRequest(result.Succeeded.Errors);
+        });
 
         groupBuilder.MapPost("logout", Logout).RequireAuthorization();
     }
