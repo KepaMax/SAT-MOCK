@@ -1,4 +1,5 @@
-﻿using EXAM_SYSTEM.Infrastructure.Identity;
+﻿using EXAM_SYSTEM.Application.Users.Commands;
+using EXAM_SYSTEM.Infrastructure.Identity;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,16 @@ public class Users : EndpointGroupBase
     {
         groupBuilder.MapIdentityApi<ApplicationUser>();
 
-        groupBuilder.MapPost(Logout, "logout").RequireAuthorization();
+        // Manual override so Scalar shows the Username field
+        groupBuilder.MapPost("register", async (ISender sender, CreateUserCommand command) =>
+        {
+            var result = await sender.Send(command);
+            return result.Succeeded ? Results.Ok() : Results.BadRequest();
+        })
+        .WithSummary("Registers a new student")
+        .WithDescription("Accepts Username, Email, and Password."); // Scalar will now show all 3 fields!
+
+        groupBuilder.MapPost("logout", Logout).RequireAuthorization();
     }
 
     [EndpointName(nameof(Logout))]

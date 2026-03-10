@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: exam_db
+    environment:
+      POSTGRES_USER: examAdmin
+      POSTGRES_PASSWORD: sat_mock_2026
+      POSTGRES_DB: exam_system
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Web/Dockerfile
+    container_name: exam_api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=db;Database=exam_system;Username=examAdmin;Password=sat_mock_2026
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
