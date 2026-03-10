@@ -1,28 +1,43 @@
 services:
+  # --- The PostgreSQL Database ---
   db:
     image: postgres:latest
     container_name: exam_db
+    restart: always
     environment:
-      POSTGRES_USER: examAdmin
-      POSTGRES_PASSWORD: sat_mock_2026
-      POSTGRES_DB: exam_system
+      # These use the variables from your .env file
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-exam_system}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-exam_system}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # --- Your ASP.NET Core 10 API ---
   api:
     build:
       context: .
-      dockerfile: src/Web/Dockerfile
+      dockerfile: Dockerfile
     container_name: exam_api
+    restart: always
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Host=db;Database=exam_system;Username=examAdmin;Password=sat_mock_2026
+      # The double underscore (__) replaces the colon (:) for Linux environment variables
+      - ConnectionStrings__DefaultConnection=Host=db;Database=${DB_NAME:-exam_system};Username=${DB_USER:-postgres};Password=${DB_PASSWORD}
+      # Required for some Clean Architecture templates (MediatR, etc.)
+      - MediatR__License=Free/Open Source
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
+# Persist the database data even if the container is deleted
 volumes:
   postgres_data:
