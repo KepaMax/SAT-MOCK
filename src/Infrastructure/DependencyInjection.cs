@@ -18,12 +18,15 @@ public static class DependencyInjection
         var connectionString = builder.Configuration.GetConnectionString("EXAM_SYSTEMDb");
         Guard.Against.Null(connectionString, message: "Connection string 'EXAM_SYSTEMDb' not found.");
 
+        builder.Services.AddSingleton(TimeProvider.System);
+
         builder.Services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
         builder.Services.AddScoped<ISaveChangesInterceptor, DispatchDomainEventsInterceptor>();
 
         builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
+            Console.WriteLine(connectionString);
             options.UseNpgsql(connectionString);
             options.ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
         });
@@ -32,6 +35,8 @@ public static class DependencyInjection
         builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
         builder.Services.AddScoped<ApplicationDbContextInitialiser>();
+
+        builder.Services.AddScoped<IUserValidator<ApplicationUser>, CustomUserValidator<ApplicationUser>>();
 
         builder.Services.AddAuthentication()
             .AddBearerToken(IdentityConstants.BearerScheme);

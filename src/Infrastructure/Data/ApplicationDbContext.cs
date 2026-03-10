@@ -13,5 +13,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     {
         base.OnModelCreating(builder);
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        builder.Entity<ApplicationUser>()
+        .HasIndex(u => u.NormalizedUserName)
+        .HasDatabaseName("UserNameIndex")
+        .IsUnique(false);
+
+        builder.Entity<ApplicationUser>()
+        .HasIndex(u => u.NormalizedEmail)
+        .HasDatabaseName("EmailIndex")
+        .IsUnique(true);
     }
 }

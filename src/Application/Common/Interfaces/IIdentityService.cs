@@ -1,4 +1,5 @@
 ﻿using EXAM_SYSTEM.Application.Common.Models;
+using EXAM_SYSTEM.Application.Users.Commands.LoginUser;
 
 namespace EXAM_SYSTEM.Application.Common.Interfaces;
 
@@ -13,4 +14,10 @@ public interface IIdentityService
     Task<(Result Result, string UserId)> CreateUserAsync(string userName, string email, string password);
 
     Task<Result> DeleteUserAsync(string userId);
+
+    Task<LoginResponse?> LoginAsync(string email, string password);
+
+    Task<LoginResponse?> RefreshTokenAsync(string refreshToken);
+
+    Task<UserProfileInfo?> GetUserProfileAsync(string userId);
 }
