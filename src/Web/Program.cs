@@ -14,6 +14,15 @@ builder.AddApplicationServices();
 builder.AddInfrastructureServices();
 builder.AddWebServices();
 builder.Host.UseSerilog();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 // Configure Forwarded Headers for Caddy
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
