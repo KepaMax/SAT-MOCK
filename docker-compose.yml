@@ -30,7 +30,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
       # Pulls from .env - The double underscore maps to ConnectionStrings:DefaultConnection in .NET
-      - ConnectionStrings__DefaultConnection=${ConnectionStrings__DefaultConnection}
+      - ConnectionStrings__EXAM_SYSTEMDb=${ConnectionStrings__EXAM_SYSTEMDb}
     depends_on:
       exam_db:
         condition: service_healthy
