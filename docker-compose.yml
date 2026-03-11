@@ -1,23 +1,20 @@
 services:
-  # --- The PostgreSQL Database ---
-  db:
-    image: postgres:16-alpine
-    container_name: exam_db
+  # --- The Reverse Proxy (HTTPS & Domain) ---
+  caddy:
+    image: caddy:latest
+    container_name: exam_proxy
     restart: always
-    environment:
-      # These use the variables from your .env file
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME:-exam_system}
-    volumes:
-      - postgres_data:/var/lib/postgresql
     ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-exam_system}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+    networks:
+      - exam_network
 
   # --- Your ASP.NET Core 10 API ---
   api:
@@ -28,16 +25,47 @@ services:
     restart: always
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      # The double underscore (__) replaces the colon (:) for Linux environment variables
       - ConnectionStrings__EXAM_SYSTEMDb=Host=db;Database=${DB_NAME:-exam_system};Username=${DB_USER:-postgres};Password=${DB_PASSWORD}
-      # Required for some Clean Architecture templates (MediatR, etc.)
-      - MediatR__License=Free/Open Source
-    ports:
-      - "8080:8080"
+    volumes:
+      # Persists login tokens/keys so you don't get 401s after a restart
+      - dp_keys:/root/.aspnet/DataProtection-Keys
+    # We remove public ports 8080 because Caddy handles the traffic internally
+    expose:
+      - "8080"
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - exam_network
 
-# Persist the database data even if the container is deleted
+  # --- The PostgreSQL Database ---
+  db:
+    image: postgres:16-alpine
+    container_name: exam_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-exam_system}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    # Keep 5432 open if you need to connect from your PC (e.g. pgAdmin/DBeaver)
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-exam_system}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - exam_network
+
+networks:
+  exam_network:
+    driver: bridge
+
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:
+  dp_keys:
