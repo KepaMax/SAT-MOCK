@@ -1,71 +1,65 @@
 services:
-  # --- The Reverse Proxy (HTTPS & Domain) ---
-  caddy:
+  # 1. Database Service
+  exam_db:
+    image: postgres:16-alpine
+    container_name: exam_db
+    restart: always
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: YourStrongPassword123!
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sat-mock_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Backend API (.NET 10)
+  exam_api:
+    image: ${DOCKER_IMAGE_NAME:-sat-mock-api}
+    container_name: exam_api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=exam_db;Database=postgres;Username=postgres;Password=YourStrongPassword123!
+    depends_on:
+      exam_db:
+        condition: service_healthy
+    networks:
+      - sat-mock_network
+    # Note: We do NOT expose ports here; Caddy handles the entry point
+
+  # 3. Reverse Proxy (Caddy)
+  exam_proxy:
     image: caddy:latest
     container_name: exam_proxy
-    restart: always
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp" # Required for HTTP/3
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - api
+      - exam_api
     networks:
-      - exam_network
-
-  # --- Your ASP.NET Core 10 API ---
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: exam_api
-    restart: always
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__EXAM_SYSTEMDb=Host=db;Database=${DB_NAME:-exam_system};Username=${DB_USER:-postgres};Password=${DB_PASSWORD}
-    volumes:
-      # Persists login tokens/keys so you don't get 401s after a restart
-      - dp_keys:/root/.aspnet/DataProtection-Keys
-    # We remove public ports 8080 because Caddy handles the traffic internally
-    expose:
-      - "8080"
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - exam_network
-
-  # --- The PostgreSQL Database ---
-  db:
-    image: postgres:16-alpine
-    container_name: exam_db
-    restart: always
-    environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME:-exam_system}
-    volumes:
-      - postgres_data:/var/lib/postgresql
-    # Keep 5432 open if you need to connect from your PC (e.g. pgAdmin/DBeaver)
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-exam_system}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - exam_network
+      - sat-mock_network
 
 networks:
-  exam_network:
+  sat-mock_network:
     driver: bridge
 
 volumes:
   postgres_data:
   caddy_data:
   caddy_config:
-  dp_keys:
