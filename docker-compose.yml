@@ -1,5 +1,5 @@
 services:
-  # 1. Database Service
+  # 1. Database
   exam_db:
     image: postgres:16-alpine
     container_name: exam_db
@@ -11,16 +11,16 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - sat-mock_network
+      - app_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # 2. Backend API (.NET 10)
+  # 2. Backend API
   exam_api:
-    image: ${DOCKER_IMAGE_NAME:-sat-mock-api}
+    image: sat-mock-api
     container_name: exam_api
     build:
       context: .
@@ -34,10 +34,9 @@ services:
       exam_db:
         condition: service_healthy
     networks:
-      - sat-mock_network
-    # Note: We do NOT expose ports here; Caddy handles the entry point
+      - app_network
 
-  # 3. Reverse Proxy (Caddy)
+  # 3. Reverse Proxy
   exam_proxy:
     image: caddy:latest
     container_name: exam_proxy
@@ -45,7 +44,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "443:443/udp" # Required for HTTP/3
+      - "443:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
@@ -53,10 +52,11 @@ services:
     depends_on:
       - exam_api
     networks:
-      - sat-mock_network
+      - app_network
 
 networks:
-  sat-mock_network:
+  app_network:
+    name: sat-mock_network # This forces the network name to be exactly this
     driver: bridge
 
 volumes:
