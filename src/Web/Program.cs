@@ -53,7 +53,7 @@ app.UseHealthChecks("/health");
 app.UseStaticFiles();
 
 // Ensure CORS is before MapOpenApi and MapScalar
-app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+app.UseCors();
 
 app.MapOpenApi();
 app.MapScalarApiReference();

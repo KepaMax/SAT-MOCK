@@ -5,15 +5,15 @@ services:
     container_name: exam_db
     restart: always
     environment:
-      POSTGRES_DB: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: YourStrongPassword123!
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,14 +29,15 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Host=exam_db;Database=postgres;Username=postgres;Password=YourStrongPassword123!
+      # Pulls from .env - The double underscore maps to ConnectionStrings:DefaultConnection in .NET
+      - ConnectionStrings__DefaultConnection=${ConnectionStrings__DefaultConnection}
     depends_on:
       exam_db:
         condition: service_healthy
     networks:
       - app_network
 
-  # 3. Reverse Proxy
+  # 3. Reverse Proxy (Caddy)
   exam_proxy:
     image: caddy:latest
     container_name: exam_proxy
@@ -56,7 +57,7 @@ services:
 
 networks:
   app_network:
-    name: sat-mock_network # This forces the network name to be exactly this
+    name: sat-mock_network
     driver: bridge
 
 volumes:
