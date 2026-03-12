@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ] # Triggers on every commit to the main branch
+    branches: [ main ]
 
 jobs:
   deploy:
@@ -11,7 +11,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Log in to VPS and execute deployment commands
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@master
         with:
@@ -19,22 +18,21 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            # 1. Navigate to project folder
             cd ~/SAT-MOCK
             
-            # 2. Update code from GitHub
+            # 1. Pull latest code
             git pull origin main
             
-            # 3. Rebuild and restart the containers
-            # This ensures the API uses the latest code/Dockerfile
+            # 2. Rebuild and restart services
             docker compose up -d --build
             
-            # 4. Run .NET 10 Database Migrations
-            # We use the SDK container to ensure the schema is updated
+            # 3. Run Database Migrations
+            # Using DOTNET_ROLL_FORWARD=LatestFeature bypasses the global.json version lock
             docker run --rm \
               --network sat-mock_network \
               -v "$(pwd):/src" \
               -w /src \
+              -e "DOTNET_ROLL_FORWARD=LatestFeature" \
               -e "ConnectionStrings__EXAM_SYSTEMDb=${{ secrets.DB_CONNECTION_STRING }}" \
               mcr.microsoft.com/dotnet/sdk:10.0-preview \
               /bin/bash -c "dotnet tool install --global dotnet-ef && \
