@@ -20,20 +20,22 @@ jobs:
           script: |
             cd ~/SAT-MOCK
             
-            # 1. Update project files
+            # 1. Pull latest code
             git pull origin main
             
-            # 2. Rebuild the app containers
+            # 2. Restart services
             docker compose up -d --build
             
             # 3. Run Database Migrations
-            # We use the official .NET 10 image and force it to 'Roll Forward'
-            # to satisfy the global.json requirement.
+            # We create an empty file and mount it OVER global.json
+            # This makes the SDK think there is no version lock.
+            touch empty_global.json
+            
             docker run --rm \
               --network sat-mock_network \
               -v "$(pwd):/src" \
+              -v "$(pwd)/empty_global.json:/src/global.json" \
               -w /src \
-              -e "DOTNET_ROLL_FORWARD=Major" \
               -e "ConnectionStrings__EXAM_SYSTEMDb=${{ secrets.DB_CONNECTION_STRING }}" \
               mcr.microsoft.com/dotnet/sdk:10.0-preview \
               /bin/bash -c "
@@ -45,3 +47,6 @@ jobs:
                   --startup-project src/Web \
                   --context ApplicationDbContext
               "
+            
+            # Cleanup the temp file
+            rm empty_global.json
