@@ -20,24 +20,32 @@ jobs:
           script: |
             cd ~/SAT-MOCK
             
-            # 1. Pull latest code
+            # 1. Pull latest code from GitHub
             git pull origin main
             
-            # 2. Rebuild and restart services
+            # 2. Rebuild and restart the containers
+            # This ensures the API uses the latest code changes
             docker compose up -d --build
             
             # 3. Run Database Migrations
-            # Using DOTNET_ROLL_FORWARD=LatestFeature bypasses the global.json version lock
+            # We temporarily rename global.json so the SDK container doesn't 
+            # crash looking for version 10.0.103
             docker run --rm \
               --network sat-mock_network \
               -v "$(pwd):/src" \
               -w /src \
-              -e "DOTNET_ROLL_FORWARD=LatestFeature" \
               -e "ConnectionStrings__EXAM_SYSTEMDb=${{ secrets.DB_CONNECTION_STRING }}" \
               mcr.microsoft.com/dotnet/sdk:10.0-preview \
-              /bin/bash -c "dotnet tool install --global dotnet-ef && \
-              export PATH=\"\$PATH:/root/.dotnet/tools\" && \
-              dotnet ef database update \
-                --project src/Infrastructure \
-                --startup-project src/Web \
-                --context ApplicationDbContext"
+              /bin/bash -c "
+                if [ -f global.json ]; then mv global.json global.json.bak; fi
+                
+                dotnet tool install --global dotnet-ef
+                export PATH=\"\$PATH:/root/.dotnet/tools\"
+                
+                dotnet ef database update \
+                  --project src/Infrastructure \
+                  --startup-project src/Web \
+                  --context ApplicationDbContext
+                
+                if [ -f global.json.bak ]; then mv global.json.bak global.json; fi
+              "
