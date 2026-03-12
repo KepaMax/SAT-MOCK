@@ -20,25 +20,23 @@ jobs:
           script: |
             cd ~/SAT-MOCK
             
-            # 1. Pull latest code from GitHub
+            # 1. Update project files
             git pull origin main
             
-            # 2. Rebuild and restart the containers
-            # This ensures the API uses the latest code changes
+            # 2. Rebuild the app containers
             docker compose up -d --build
             
             # 3. Run Database Migrations
-            # We temporarily rename global.json so the SDK container doesn't 
-            # crash looking for version 10.0.103
+            # We use the official .NET 10 image and force it to 'Roll Forward'
+            # to satisfy the global.json requirement.
             docker run --rm \
               --network sat-mock_network \
               -v "$(pwd):/src" \
               -w /src \
+              -e "DOTNET_ROLL_FORWARD=Major" \
               -e "ConnectionStrings__EXAM_SYSTEMDb=${{ secrets.DB_CONNECTION_STRING }}" \
               mcr.microsoft.com/dotnet/sdk:10.0-preview \
               /bin/bash -c "
-                if [ -f global.json ]; then mv global.json global.json.bak; fi
-                
                 dotnet tool install --global dotnet-ef
                 export PATH=\"\$PATH:/root/.dotnet/tools\"
                 
@@ -46,6 +44,4 @@ jobs:
                   --project src/Infrastructure \
                   --startup-project src/Web \
                   --context ApplicationDbContext
-                
-                if [ -f global.json.bak ]; then mv global.json.bak global.json; fi
               "
