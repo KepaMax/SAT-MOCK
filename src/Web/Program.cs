@@ -37,7 +37,7 @@ var app = builder.Build();
 // MUST be the first middleware to ensure the app knows it's using HTTPS
 app.UseForwardedHeaders();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     await app.InitialiseDatabaseAsync();
 }
