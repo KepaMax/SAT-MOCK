@@ -34,9 +34,9 @@ jobs:
             docker compose up -d --build
             
             # 4. Run Database Migrations
-            # Using the host SDK is faster and avoids the 'mmap' global.json errors
             export PATH="$PATH:$HOME/.dotnet/tools"
-            
+
+            # Force the connection to use localhost because we are running ON the VPS host
             dotnet ef database update \
               --project src/Infrastructure \
               --startup-project src/Web \
