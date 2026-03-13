@@ -10,10 +10,9 @@ namespace EXAM_SYSTEM.Infrastructure.Data;
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
-    
-    public DbSet<Student> Students { get; set; }
 
-    public DbSet<School> Schools { get; set; }
+    public DbSet<Student> Students { get; set; } = null!;
+    public DbSet<School> Schools { get; set; } = null!;
     
     protected override void OnModelCreating(ModelBuilder builder)
     {
