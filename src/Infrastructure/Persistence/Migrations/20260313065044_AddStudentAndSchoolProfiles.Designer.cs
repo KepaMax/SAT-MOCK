@@ -3,17 +3,20 @@ using System;
 using EXAM_SYSTEM.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace EXAM_SYSTEM.Infrastructure.Migrations
+namespace EXAM_SYSTEM.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260313065044_AddStudentAndSchoolProfiles")]
+    partial class AddStudentAndSchoolProfiles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -40,7 +43,7 @@ namespace EXAM_SYSTEM.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Schools");
+                    b.ToTable("School");
                 });
 
             modelBuilder.Entity("EXAM_SYSTEM.Domain.Entities.Student", b =>
@@ -134,7 +137,6 @@ namespace EXAM_SYSTEM.Infrastructure.Migrations
                         .HasDatabaseName("EmailIndex");
 
                     b.HasIndex("NormalizedUserName")
-                        .IsUnique()
                         .HasDatabaseName("UserNameIndex");
 
                     b.HasIndex("SchoolId");
