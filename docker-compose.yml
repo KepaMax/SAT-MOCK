@@ -4,6 +4,9 @@ services:
     image: postgres:16-alpine
     container_name: exam_db
     restart: always
+    # Exposed so the VPS host can run 'dotnet ef database update'
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -29,8 +32,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
-      # Pulls from .env - The double underscore maps to ConnectionStrings:DefaultConnection in .NET
-      - ConnectionStrings__EXAM_SYSTEMDb=${ConnectionStrings__EXAM_SYSTEMDb}
+      # Use the DefaultConnection name that the Clean Architecture code expects
+      - ConnectionStrings__DefaultConnection=${ConnectionStrings__DefaultConnection}
     depends_on:
       exam_db:
         condition: service_healthy
