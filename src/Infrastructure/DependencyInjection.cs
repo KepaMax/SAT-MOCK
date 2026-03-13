@@ -27,7 +27,7 @@ public static class DependencyInjection
         {
             options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
             Console.WriteLine(connectionString);
-            options.UseNpgsql(connectionString);
+            options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention();;
             options.ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
         });
 
