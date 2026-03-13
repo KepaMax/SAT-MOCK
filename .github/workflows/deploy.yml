@@ -38,9 +38,14 @@ jobs:
               -e "ConnectionStrings__DefaultConnection=${{ secrets.DB_CONNECTION_STRING }}" \
               mcr.microsoft.com/dotnet/sdk:10.0-preview \
               /bin/bash -c "
+                # Install tool
                 dotnet tool install --global dotnet-ef
                 export PATH=\"\$PATH:/root/.dotnet/tools\"
                 
+                # Restore packages first so the SDK has the Analyzers it needs
+                dotnet restore
+                
+                # Run the update
                 dotnet ef database update \
                   --project src/Infrastructure \
                   --startup-project src/Web \
