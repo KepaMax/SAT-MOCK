@@ -20,34 +20,13 @@ jobs:
           script: |
             cd ~/SAT-MOCK
             
-            # 1. Pull latest code
+            # 1. Pull the latest code changes
             git pull origin main
             
-            # 2. Kill the problematic global.json file if it exists
-            rm -f global.json
-            
-            # 3. Restart services
+            # 2. Build and restart the containers
+            # Since you added MigrateAsync() to your C# code, the API 
+            # will handle the database update automatically on startup.
             docker compose up -d --build
             
-            # 4. Run Database Migrations
-            # We use the docker network 'sat-mock_network' to talk to 'exam_db'
-            docker run --rm \
-              --network sat-mock_network \
-              -v "$(pwd):/src" \
-              -w /src \
-              -e "ConnectionStrings__DefaultConnection=${{ secrets.DB_CONNECTION_STRING }}" \
-              mcr.microsoft.com/dotnet/sdk:10.0-preview \
-              /bin/bash -c "
-                # Install tool
-                dotnet tool install --global dotnet-ef
-                export PATH=\"\$PATH:/root/.dotnet/tools\"
-                
-                # Restore packages first so the SDK has the Analyzers it needs
-                dotnet restore
-                
-                # Run the update
-                dotnet ef database update \
-                  --project src/Infrastructure \
-                  --startup-project src/Web \
-                  --context ApplicationDbContext
-              "
+            # 3. Cleanup unused images to save disk space
+            docker image prune -f
