@@ -20,25 +20,29 @@ jobs:
           script: |
             cd ~/SAT-MOCK
             
-            # 1. Prevent git clean from deleting your essential files
-            # (Adding these just in case they aren't in your .gitignore yet)
-            echo ".env" >> .gitignore
-            echo "Caddyfile" >> .gitignore
-            
-            # 2. Pull latest code and purge the ghost global.json
+            # 1. Pull latest code
             git pull origin main
+            
+            # 2. Kill the problematic global.json file if it exists
             rm -f global.json
             
             # 3. Restart services
-            # We use --build to ensure code changes (like the SchoolId column) are compiled
             docker compose up -d --build
             
             # 4. Run Database Migrations
-            export PATH="$PATH:$HOME/.dotnet/tools"
-
-            # Force the connection to use localhost because we are running ON the VPS host
-            dotnet ef database update \
-              --project src/Infrastructure \
-              --startup-project src/Web \
-              --context ApplicationDbContext \
-              --connection "${{ secrets.DB_CONNECTION_STRING }}"
+            # We use the docker network 'sat-mock_network' to talk to 'exam_db'
+            docker run --rm \
+              --network sat-mock_network \
+              -v "$(pwd):/src" \
+              -w /src \
+              -e "ConnectionStrings__DefaultConnection=${{ secrets.DB_CONNECTION_STRING }}" \
+              mcr.microsoft.com/dotnet/sdk:10.0-preview \
+              /bin/bash -c "
+                dotnet tool install --global dotnet-ef
+                export PATH=\"\$PATH:/root/.dotnet/tools\"
+                
+                dotnet ef database update \
+                  --project src/Infrastructure \
+                  --startup-project src/Web \
+                  --context ApplicationDbContext
+              "
